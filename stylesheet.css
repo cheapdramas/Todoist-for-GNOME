@@ -1,0 +1,208 @@
+.todoist-menu-box {
+    min-width: 340px;
+}
+
+/* Header row with the logo and "Todoist" label, top-left of the menu. */
+.todoist-header {
+    padding: 8px 12px 6px 12px;
+}
+
+.todoist-logo-icon {
+    margin-right: 12px;
+}
+
+.todoist-header-label {
+    font-weight: bold;
+    font-size: 1.05em;
+}
+
+/* Full-strength title text — the row is a clickable menu item now, so it no
+   longer gets GNOME Shell's default "insensitive" dimming. */
+.todoist-task-title {
+    font-weight: normal;
+    opacity: 1;
+}
+
+/* Task metadata (date/deadline) stays visibly dimmer than the title.
+   (The actual dimming is also set directly on the label's actor opacity in
+   extension.js, so it's not solely dependent on this CSS rule applying.) */
+.todoist-task-meta {
+    font-size: 0.85em;
+    padding-top: 2px;
+}
+
+/* Hover cue so it's clear a task row can be clicked: a subtle left accent
+   bar, on top of whatever priority background color the row already has. */
+.todoist-task-row:hover,
+.todoist-task-row:focus {
+    box-shadow: inset 3px 0 0 0 rgba(255, 255, 255, 0.55);
+}
+
+/* Background color by priority, matching Todoist itself: P1 red, P2 orange, P3 blue, P4 none. */
+.todoist-priority-p1 {
+    background-color: rgba(224, 27, 36, 0.28);
+}
+
+.todoist-priority-p2 {
+    background-color: rgba(255, 163, 72, 0.28);
+}
+
+.todoist-priority-p3 {
+    background-color: rgba(53, 132, 228, 0.28);
+}
+
+.todoist-priority-p4 {
+    background-color: transparent;
+}
+
+/* Round "complete task" button shown to the right of each task row. */
+.todoist-complete-button {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    min-height: 18px;
+    margin-left: 10px;
+    border-radius: 999px;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    background-color: transparent;
+}
+
+.todoist-complete-button:hover {
+    border-color: rgb(53, 132, 228);
+    background-color: rgba(53, 132, 228, 0.35);
+}
+
+.todoist-complete-button:active {
+    border-color: rgb(53, 132, 228);
+    background-color: rgb(53, 132, 228);
+}
+
+/* Shown briefly right after a successful completion, before the row collapses. */
+.todoist-complete-button-done {
+    border-color: rgb(88, 194, 121);
+    background-color: rgb(88, 194, 121);
+}
+
+/* Applied while a completion request is in flight. */
+.todoist-task-completing {
+    opacity: 0.5;
+}
+
+/* Applied briefly to a task row right after it's been created, while the
+   "just added" animation plays (see _animateTaskAdded). */
+.todoist-task-adding {
+    background-color: rgba(88, 194, 121, 0.25);
+}
+
+/* Quick-add row inside the menu: a text field plus a small "+" button,
+   right before the "Open Todoist" / "Open Settings" items. */
+.todoist-quickadd-row {
+    padding: 4px 12px 10px 12px;
+}
+
+.todoist-quickadd-entry {
+    padding: 4px 6px;
+}
+
+/* Todoist red, matching the brand and the submit button in the "Add task" dialog. */
+.todoist-quickadd-button {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    border-radius: 6px;
+    background-color: #e44332;
+    color: white;
+}
+
+.todoist-quickadd-button:hover {
+    background-color: #c8382a;
+}
+
+/* "Add task" modal dialog, opened via the global keyboard shortcut. */
+.todoist-add-task-dialog {
+    padding: 4px;
+}
+
+.todoist-add-task-content {
+    padding: 22px;
+    spacing: 10px;
+    min-width: 320px;
+}
+
+/* Big logo on the left, with "Add task" + "For GNOME" stacked next to it. */
+.todoist-add-task-header {
+    spacing: 14px;
+    margin-bottom: 10px;
+}
+
+.todoist-add-task-logo {
+    icon-size: 42px;
+}
+
+.todoist-add-task-title {
+    font-weight: bold;
+    font-size: 1.15em;
+}
+
+/* No scrolling — the entry (and the dialog around it, since it's a plain
+   vertical layout) just grows taller as the wrapped text needs more lines. */
+.todoist-add-task-entry {
+    min-width: 260px;
+    max-width: 420px;
+    padding: 6px 8px;
+}
+
+/* Row of priority / date / time pickers, with the submit button pinned to
+   the right of it. */
+.todoist-add-task-options-row {
+    spacing: 6px;
+    margin-top: 8px;
+}
+
+.todoist-add-task-option-button {
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 4px 10px;
+    font-size: 0.9em;
+}
+
+.todoist-add-task-option-button:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Applied once a value has been picked, on top of any priority tint. */
+.todoist-add-task-option-button-active {
+    border-color: rgb(53, 132, 228);
+    background-color: rgba(53, 132, 228, 0.22);
+}
+
+/* Small bounded time field ("hh:mm", 5 chars max), sized to match the
+   priority/date pill buttons next to it. */
+.todoist-add-task-time-entry {
+    min-width: 64px;
+    max-width: 64px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 4px 10px;
+    font-size: 0.9em;
+}
+
+.todoist-add-task-time-entry:focus {
+    border-color: rgb(53, 132, 228);
+}
+
+/* Round submit button showing a "+" icon instead of an "Add" label. */
+.todoist-add-task-submit {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    border-radius: 999px;
+    background-color: #e44332;
+    color: white;
+}
+
+.todoist-add-task-submit:hover {
+    background-color: #c8382a;
+}

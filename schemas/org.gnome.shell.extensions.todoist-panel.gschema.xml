@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.todoist-panel" path="/org/gnome/shell/extensions/todoist-panel/">
+    <key name="api-token" type="s">
+      <default>''</default>
+      <summary>Todoist API token</summary>
+      <description>Personal API token (Todoist → Settings → Integrations → Developer)</description>
+    </key>
+    <key name="app-desktop-file" type="s">
+      <default>''</default>
+      <summary>Path to the Todoist app's .desktop file</summary>
+      <description>Path to the Todoist application's .desktop file (works for native, Flatpak and Snap packages)</description>
+    </key>
+    <key name="add-task-shortcut" type="as">
+      <default>['&lt;Super&gt;&lt;Shift&gt;t']</default>
+      <summary>Keyboard shortcut to open the Add Task popup</summary>
+      <description>Global shortcut that opens a small "Add Task" dialog to quickly add a task to Todoist</description>
+    </key>
+  </schema>
+</schemalist>
