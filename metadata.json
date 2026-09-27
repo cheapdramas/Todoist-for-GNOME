@@ -3,7 +3,7 @@
     "name": "Todoist for GNOME",
     "description": "See and manage your Todoist tasks without leaving your desktop.",
     "shell-version": ["45", "46", "47", "48", "49", "50"],
-    "url": "",
+    "url": "https://github.com/cheapdramas/todoist-for-gnome",
     "version": 1,
     "settings-schema": "org.gnome.shell.extensions.todoist-for-gnome"
 }
