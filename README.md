@@ -50,14 +50,14 @@ git clone https://github.com/YOUR-USERNAME/todoist-for-gnome.git
 cd todoist-for-gnome
 
 # Copy the extension into GNOME Shell's extensions folder
-mkdir -p ~/.local/share/gnome-shell/extensions/todoist-panel@rostislav
-cp -r * ~/.local/share/gnome-shell/extensions/todoist-panel@rostislav/
+mkdir -p ~/.local/share/gnome-shell/extensions/todoist-for-gnome@rostiq
+cp -r * ~/.local/share/gnome-shell/extensions/todoist-for-gnome@rostiq/
 
 # Compile the settings schema
-glib-compile-schemas ~/.local/share/gnome-shell/extensions/todoist-panel@rostislav/schemas/
+glib-compile-schemas ~/.local/share/gnome-shell/extensions/todoist-for-gnome@rostiq/schemas/
 
 # Enable the extension
-gnome-extensions enable todoist-panel@rostislav
+gnome-extensions enable todoist-for-gnome@rostiq
 ```
 
 Then restart GNOME Shell so it picks up the new extension:
@@ -73,7 +73,7 @@ Then restart GNOME Shell so it picks up the new extension:
 
 ### 2. Add it to the extension
 
-1. Open **GNOME Extensions** (or run `gnome-extensions prefs todoist-panel@rostislav`).
+1. Open **GNOME Extensions** (or run `gnome-extensions prefs todoist-for-gnome@rostiq`).
 2. Find **Todoist for GNOME** and open its settings.
 3. Paste the token into the **API Token** field.
 
