@@ -1,6 +1,7 @@
+
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
-  <schema id="org.gnome.shell.extensions.todoist-panel" path="/org/gnome/shell/extensions/todoist-panel/">
+  <schema id="org.gnome.shell.extensions.todoist-for-gnome" path="/org/gnome/shell/extensions/todoist-for-gnome/">
     <key name="api-token" type="s">
       <default>''</default>
       <summary>Todoist API token</summary>
