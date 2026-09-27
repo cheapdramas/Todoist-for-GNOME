@@ -46,7 +46,7 @@ Once published, you'll be able to install it directly from your browser:
 ### Manually, from source
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/todoist-for-gnome.git
+git clone https://github.com/cheapdramas/todoist-for-gnome.git
 cd todoist-for-gnome
 
 # Copy the extension into GNOME Shell's extensions folder
