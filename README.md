@@ -31,7 +31,7 @@
 
 | Panel dropdown | Add task popup |
 |:---:|:---:|
-| <img src="docs/screenshots/panel.png" alt="Panel dropdown showing the task list" width="380"> | <img src="docs/screenshots/modal-dialog.png" alt="Add task popup dialog" width="380"> |
+| <img src="assets/panel.png" alt="Panel dropdown showing the task list" width="380"> | <img src="assets/modal-dialog.png" alt="Add task popup dialog" width="380"> |
 
 </div>
 
