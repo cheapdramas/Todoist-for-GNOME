@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="images/todoist-logo.svg" alt="Todoist for GNOME logo" width="96" height="96">
+<img src="assets/todoist-logo.svg" alt="Todoist for GNOME logo" width="96" height="96">
 
 # Todoist for GNOME
 
@@ -8,7 +8,7 @@
 
 [![GNOME Shell](https://img.shields.io/badge/GNOME%20Shell-45%E2%80%9350-4A86CF?logo=gnome&logoColor=white)](https://extensions.gnome.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Get it on GNOME Extensions](https://img.shields.io/badge/GNOME%20Extensions-Install-e44332)](https://extensions.gnome.org/)
+[![Get it on GNOME Extensions](https://img.shields.io/badge/GNOME%20Extensions-Install-e44332)](https://extensions.gnome.org/extension/11070/todoist-for-gnome/)
 
 </div>
 
@@ -37,32 +37,35 @@
 
 ## Installation
 
-### From GNOME Extensions (recommended)
+### Extension Manager (Recommended)
+...
+### GNOME Extensions Website
 
-Once published, you'll be able to install it directly from your browser:
+<a href="https://extensions.gnome.org/extension/11070/todoist-for-gnome/">
+  <!-- Button SVG by Just Perfection developer -->
+  <img src="./assets/download-from-ego.svg" height="80">
+</a>
 
-[**extensions.gnome.org/extension/XXXX/todoist-for-gnome**](https://extensions.gnome.org/) *(link coming soon)*
+### Manual Installation
 
-### Manually, from source
+If latest version of the extension is not yet available on the GNOME Extensions
+website, you can install it manually:
 
-```bash
-git clone https://github.com/cheapdramas/todoist-for-gnome.git
-cd todoist-for-gnome
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/cheapdramas/todoist-for-gnome
+   rsync -a --delete todoist-for-gnome@cheapdramas.github.io/ \
+      ~/.local/share/gnome-shell/extensions/todoist-for-gnome@cheapdramas.github.io/
 
-# Copy the extension into GNOME Shell's extensions folder
-mkdir -p ~/.local/share/gnome-shell/extensions/todoist-for-gnome@cheapdramas.github.io
-cp -r * ~/.local/share/gnome-shell/extensions/todoist-for-gnome@cheapdramas.github.io/
+3. Restart GNOME Shell:
+   - Log out and log back in
 
-# Compile the settings schema
-glib-compile-schemas ~/.local/share/gnome-shell/extensions/todoist-for-gnome@cheapdramas.github.io/schemas/
+4. Enable the extension:
+   ```bash
+   gnome-extensions enable todoist-for-gnome@cheapdramas.github.io
+   ```
 
-# Enable the extension
-gnome-extensions enable todoist-for-gnome@cheapdramas.github.io
-```
-
-Then restart GNOME Shell so it picks up the new extension:
-- **X11**: press <kbd>Alt</kbd>+<kbd>F2</kbd>, type `r`, press Enter.
-- **Wayland**: log out and log back in.
+   Or use Extensions Manager app to enable "Todoist for GNOME"
 
 ## Setup
 
