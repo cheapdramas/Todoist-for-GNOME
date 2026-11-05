@@ -54,8 +54,9 @@ website, you can install it manually:
 1. Clone this repository:
    ```bash
    git clone https://github.com/cheapdramas/todoist-for-gnome
-   rsync -a --delete todoist-for-gnome@cheapdramas.github.io/ \
-      ~/.local/share/gnome-shell/extensions/todoist-for-gnome@cheapdramas.github.io/
+   cd todoist-for-gnome
+   gnome-extensions pack . --extra-source=images/
+   gnome-extensions install "todoist-for-gnome@cheapdramas.github.io.shell-extension.zip" --force
 
 3. Restart GNOME Shell:
    - Log out and log back in
