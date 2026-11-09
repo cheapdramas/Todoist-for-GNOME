@@ -3,6 +3,7 @@
 <img src="assets/logo.svg" alt="Todoist for GNOME logo" width="96" height="96">
 
 # Todoist for GNOME
+! Not officially supported by Todoist !
 
 **Your Todoist tasks, right in the top panel.**
 

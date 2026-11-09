@@ -206,3 +206,93 @@
 .todoist-add-task-submit:hover {
     background-color: #c8382a;
 }
+
+/* Calendar popup shown under the "Date" pill in the "Add task" dialog. */
+.todoist-calendar-menu .popup-menu-content {
+    padding: 0;
+}
+
+.todoist-calendar {
+    padding: 10px 12px 8px 12px;
+    spacing: 6px;
+    min-width: 252px;
+}
+
+.todoist-calendar-nav {
+    spacing: 4px;
+}
+
+.todoist-calendar-month {
+    font-weight: bold;
+}
+
+.todoist-calendar-nav-button {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    border-radius: 999px;
+}
+
+.todoist-calendar-nav-button:hover,
+.todoist-calendar-nav-button:focus {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.todoist-calendar-grid {
+    spacing: 2px;
+}
+
+.todoist-calendar-weekday {
+    font-size: 0.8em;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.55);
+    padding-bottom: 4px;
+}
+
+.todoist-calendar-day {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 999px;
+    text-align: center;
+}
+
+.todoist-calendar-day:hover,
+.todoist-calendar-day:focus {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Days that belong to the previous/next month, shown to fill the grid. */
+.todoist-calendar-day-other {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.todoist-calendar-day-today {
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.todoist-calendar-day-selected,
+.todoist-calendar-day-selected:hover,
+.todoist-calendar-day-selected:focus {
+    background-color: rgb(53, 132, 228);
+    border-color: rgb(53, 132, 228);
+    color: white;
+    font-weight: bold;
+}
+
+.todoist-calendar-footer {
+    padding-top: 4px;
+}
+
+.todoist-calendar-footer-button {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.9em;
+}
+
+.todoist-calendar-footer-button:hover,
+.todoist-calendar-footer-button:focus {
+    background-color: rgba(255, 255, 255, 0.1);
+}

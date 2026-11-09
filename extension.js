@@ -43,14 +43,6 @@ const META_OPACITY = 150;
 
 const pad2 = n => String(n).padStart(2, '0');
 
-// Stages the "Date" pill cycles through on each click, same pattern as the
-// priority pill: none -> Today -> Tomorrow -> Next week -> none.
-const DATE_STAGES = [
-    {label: 'Today', days: 0},
-    {label: 'Tomorrow', days: 1},
-    {label: 'Next week', days: 7},
-];
-
 // Parses inline task metadata the same way it's typed in Todoist's own
 // quick-add bar:
 //   - "!!1".."!!4" sets the priority, using Todoist's own UI numbering
@@ -108,6 +100,201 @@ function parseTaskInput(rawText) {
     };
 }
 
+const isSameDay = (a, b) =>
+    a && b &&
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+// Text shown on the "Date" pill once a date is picked: "Today" / "Tomorrow"
+// for those two, otherwise a short locale-aware date (year only if it's not
+// the current one).
+function formatPickedDate(date) {
+    const today = new Date();
+    if (isSameDay(date, today))
+        return 'Today';
+    const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+    if (isSameDay(date, tomorrow))
+        return 'Tomorrow';
+    const opts = {day: 'numeric', month: 'short'};
+    if (date.getFullYear() !== today.getFullYear())
+        opts.year = 'numeric';
+    return new Intl.DateTimeFormat(undefined, opts).format(date);
+}
+
+// Small month-grid calendar shown as a popup right under the "Date" pill
+// (a regular Shell PopupMenu, so it floats above the dialog, closes on
+// outside click / Escape, and is positioned by the Shell itself).
+//
+// `onPick(date | null)` is called when a day is clicked, or "Clear" is
+// pressed (null). The popup closes itself after a pick.
+class DatePickerPopup {
+    constructor(sourceButton, onPick) {
+        this._onPick = onPick;
+        this._selected = null;
+
+        const now = new Date();
+        this._viewYear = now.getFullYear();
+        this._viewMonth = now.getMonth();
+
+        this.menu = new PopupMenu.PopupMenu(sourceButton, 0.5, St.Side.TOP);
+        this.menu.actor.add_style_class_name('todoist-calendar-menu');
+        Main.uiGroup.add_child(this.menu.actor);
+        this.menu.actor.hide();
+
+        // The manager takes care of the modal grab (click outside / Esc
+        // closes the popup) while the dialog itself stays open.
+        this._manager = new PopupMenu.PopupMenuManager(sourceButton);
+        this._manager.addMenu(this.menu);
+
+        this.menu.connect('open-state-changed', (_menu, open) => {
+            if (!open)
+                return;
+            // Always open on the month of the picked date (or today's).
+            const base = this._selected ?? new Date();
+            this._viewYear = base.getFullYear();
+            this._viewMonth = base.getMonth();
+            this._rebuildGrid();
+        });
+
+        const root = new St.BoxLayout({vertical: true, style_class: 'todoist-calendar'});
+
+        // --- Month navigation ---
+        const nav = new St.BoxLayout({style_class: 'todoist-calendar-nav'});
+        nav.add_child(this._makeNavButton('go-previous-symbolic', () => this._shiftMonth(-1)));
+        this._monthLabel = new St.Label({
+            style_class: 'todoist-calendar-month',
+            x_expand: true,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        nav.add_child(this._monthLabel);
+        nav.add_child(this._makeNavButton('go-next-symbolic', () => this._shiftMonth(1)));
+        root.add_child(nav);
+
+        // --- Weekday header + day grid (Monday first) ---
+        this._layout = new Clutter.GridLayout({
+            column_homogeneous: true,
+            row_homogeneous: true,
+        });
+        this._grid = new St.Widget({
+            style_class: 'todoist-calendar-grid',
+            layout_manager: this._layout,
+            x_expand: true,
+        });
+        root.add_child(this._grid);
+
+        // --- Footer: Clear / Today ---
+        const footer = new St.BoxLayout({style_class: 'todoist-calendar-footer'});
+        const clearButton = new St.Button({
+            label: 'Clear',
+            style_class: 'todoist-calendar-footer-button',
+            can_focus: true,
+            track_hover: true,
+        });
+        clearButton.connect('clicked', () => this._pick(null));
+        footer.add_child(clearButton);
+        footer.add_child(new St.Widget({x_expand: true}));
+        const todayButton = new St.Button({
+            label: 'Today',
+            style_class: 'todoist-calendar-footer-button',
+            can_focus: true,
+            track_hover: true,
+        });
+        todayButton.connect('clicked', () => this._pick(new Date()));
+        footer.add_child(todayButton);
+        root.add_child(footer);
+
+        this.menu.box.add_child(root);
+        this._rebuildGrid();
+    }
+
+    _makeNavButton(iconName, callback) {
+        const button = new St.Button({
+            style_class: 'todoist-calendar-nav-button',
+            can_focus: true,
+            track_hover: true,
+            child: new St.Icon({icon_name: iconName, icon_size: 16}),
+        });
+        button.connect('clicked', callback);
+        return button;
+    }
+
+    _shiftMonth(delta) {
+        const d = new Date(this._viewYear, this._viewMonth + delta, 1);
+        this._viewYear = d.getFullYear();
+        this._viewMonth = d.getMonth();
+        this._rebuildGrid();
+    }
+
+    _rebuildGrid() {
+        this._grid.destroy_all_children();
+
+        this._monthLabel.text = new Intl.DateTimeFormat(undefined, {
+            month: 'long',
+            year: 'numeric',
+        }).format(new Date(this._viewYear, this._viewMonth, 1));
+
+        // Weekday names, Monday first (2024-01-01 was a Monday).
+        const weekdayFormat = new Intl.DateTimeFormat(undefined, {weekday: 'short'});
+        for (let i = 0; i < 7; i++) {
+            this._layout.attach(new St.Label({
+                text: weekdayFormat.format(new Date(2024, 0, 1 + i)),
+                style_class: 'todoist-calendar-weekday',
+                x_align: Clutter.ActorAlign.CENTER,
+            }), i, 0, 1, 1);
+        }
+
+        // 6 weeks always, so the popup doesn't change height between months.
+        const first = new Date(this._viewYear, this._viewMonth, 1);
+        const offset = (first.getDay() + 6) % 7;
+        const today = new Date();
+
+        for (let i = 0; i < 42; i++) {
+            const date = new Date(this._viewYear, this._viewMonth, 1 - offset + i);
+
+            const classes = ['todoist-calendar-day'];
+            if (date.getMonth() !== this._viewMonth)
+                classes.push('todoist-calendar-day-other');
+            if (isSameDay(date, today))
+                classes.push('todoist-calendar-day-today');
+            if (isSameDay(date, this._selected))
+                classes.push('todoist-calendar-day-selected');
+
+            const button = new St.Button({
+                label: String(date.getDate()),
+                style_class: classes.join(' '),
+                can_focus: true,
+                track_hover: true,
+                x_expand: true,
+                x_align: Clutter.ActorAlign.CENTER,
+            });
+            button.connect('clicked', () => this._pick(date));
+            this._layout.attach(button, i % 7, 1 + Math.floor(i / 7), 1, 1);
+        }
+    }
+
+    _pick(date) {
+        this._selected = date;
+        this.menu.close(true);
+        this._onPick(date);
+    }
+
+    setSelected(date) {
+        this._selected = date;
+    }
+
+    toggle() {
+        this.menu.toggle();
+    }
+
+    destroy() {
+        this.menu.close(false);
+        this._manager.removeMenu(this.menu);
+        this.menu.destroy();
+    }
+}
+
 // Small "Add task" popup, opened via the global keyboard shortcut. It's a
 // lightweight modal dialog drawn by the Shell itself (like the built-in
 // "Log Out" confirmation), not a separate OS window.
@@ -123,8 +310,7 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
 
         this._onSubmit = onSubmit;
         this._priorityLevel = 0; // 0 = none, 1..4 = P1..P4
-        this._dateStageIndex = null; // null = none, else index into DATE_STAGES
-        this._selectedDate = null; // null = none, else the Date matching the current stage
+        this._selectedDate = null; // null = none, else the Date picked in the calendar popup
 
         const content = new St.BoxLayout({vertical: true, style_class: 'todoist-add-task-content'});
 
@@ -193,7 +379,9 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
         optionsRow.add_child(this._priorityButton);
 
         this._dateButton = this._makeOptionButton('📅', 'Date');
-        this._dateButton.connect('clicked', () => this._cycleDate());
+        this._datePicker = new DatePickerPopup(this._dateButton, date => this._setDate(date));
+        this.connect('destroy', () => this._datePicker.destroy());
+        this._dateButton.connect('clicked', () => this._datePicker.toggle());
         optionsRow.add_child(this._dateButton);
 
         this._timeEntry = new St.Entry({
@@ -258,23 +446,17 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
         }
     }
 
-    _cycleDate() {
-        this._dateStageIndex = this._dateStageIndex === null ? 0
-            : (this._dateStageIndex < DATE_STAGES.length - 1 ? this._dateStageIndex + 1 : null);
+    _setDate(date) {
+        this._selectedDate = date;
+        this._datePicker.setSelected(date);
 
-        if (this._dateStageIndex === null) {
-            this._selectedDate = null;
+        if (!date) {
             this._setOptionLabel(this._dateButton, null);
             this._dateButton.remove_style_class_name('todoist-add-task-option-button-active');
             return;
         }
 
-        const stage = DATE_STAGES[this._dateStageIndex];
-        const date = new Date();
-        date.setDate(date.getDate() + stage.days);
-        this._selectedDate = date;
-
-        this._setOptionLabel(this._dateButton, stage.label);
+        this._setOptionLabel(this._dateButton, formatPickedDate(date));
         this._dateButton.add_style_class_name('todoist-add-task-option-button-active');
     }
 
