@@ -135,7 +135,7 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
         });
         header.add_child(new St.Icon({
             gicon: Gio.icon_new_for_string(
-                GLib.build_filenamev([extensionPath, 'images', 'todoist-logo.svg'])),
+                GLib.build_filenamev([extensionPath, 'images', 'logo.svg'])),
             icon_size: 42,
             style_class: 'todoist-add-task-logo',
         }));
@@ -387,9 +387,9 @@ class TodoistIndicator extends PanelMenu.Button {
 
         const logo = new St.Icon({
             gicon: Gio.icon_new_for_string(
-                GLib.build_filenamev([this._extension.path, 'images', 'todoist-logo.svg'])),
+                GLib.build_filenamev([this._extension.path, 'images', 'logo.svg'])),
             icon_size: 32,
-            style_class: 'todoist-logo-icon',
+            style_class: 'logo-icon',
         });
         box.add_child(logo);
 

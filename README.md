@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/todoist-logo.svg" alt="Todoist for GNOME logo" width="96" height="96">
+<img src="assets/logo.svg" alt="Todoist for GNOME logo" width="96" height="96">
 
 # Todoist for GNOME
 
@@ -37,8 +37,6 @@
 
 ## Installation
 
-### Extension Manager (Recommended)
-...
 ### GNOME Extensions Website
 
 <a href="https://extensions.gnome.org/extension/11070/todoist-for-gnome/">
@@ -51,17 +49,17 @@
 If latest version of the extension is not yet available on the GNOME Extensions
 website, you can install it manually:
 
-1. Clone this repository:
+1. Paste this commands:
    ```bash
    git clone https://github.com/cheapdramas/todoist-for-gnome
    cd todoist-for-gnome
    gnome-extensions pack . --extra-source=images/
    gnome-extensions install "todoist-for-gnome@cheapdramas.github.io.shell-extension.zip" --force
 
-3. Restart GNOME Shell:
+2. Restart GNOME Shell:
    - Log out and log back in
 
-4. Enable the extension:
+3. Enable the extension:
    ```bash
    gnome-extensions enable todoist-for-gnome@cheapdramas.github.io
    ```
