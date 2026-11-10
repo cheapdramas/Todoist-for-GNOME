@@ -15,24 +15,15 @@
 
 ---
 
-## What it does
+## Introduction
 
-**Todoist for GNOME** adds a Todoist dropdown to your top panel, so you can check and manage your tasks without opening a browser tab or the desktop app.
-
-- 📋 **See your tasks at a glance** — a panel dropdown lists your tasks, sorted by due date and priority, with color-coded priority tags (P1–P4), just like in Todoist itself.
-- ✅ **Complete tasks in one click** — a round check button on each row, with a small completion animation.
-- ➕ **Quick-add** — a text field right in the dropdown for adding a task in a couple of keystrokes.
-- ⌨️ **Add a task from anywhere** — a global keyboard shortcut opens a small "Add task" popup on top of whatever you're doing.
-- ✍️ **Type naturally** — the quick-add field and the Add Task popup both understand inline shortcuts: `!!1`…`!!4` for priority, `25.12.2026` for a due date, `14:30` for a time — or just pick them with the priority / date / time buttons.
-- 🔗 **Open in Todoist** — click any task to jump straight to it in the Todoist desktop app (native, Flatpak or Snap) or the web app as a fallback.
-
-## Screenshots
+**Todoist for GNOME** adds a Todoist dropdown to your top panel, so you can check and manage your tasks without opening a browser tab or the desktop app. Also, bind a shortcut, and add tasks even more faster with Todoist style popup window
 
 <div align="center">
 
 | Panel dropdown | Add task popup |
 |:---:|:---:|
-| <img src="assets/panel.png" alt="Panel dropdown showing the task list" width="380"> | <img src="assets/modal-dialog.png" alt="Add task popup dialog" width="380"> |
+| <img src="assets/panel.jpg" alt="Panel dropdown showing the task list" width="380"> | <img src="assets/modal-dialog.png" alt="Add task popup dialog" width="380"> |
 
 </div>
 
@@ -67,11 +58,11 @@ website, you can install it manually:
 
    Or use Extensions Manager app to enable "Todoist for GNOME"
 
-## Setup
+## Setup / Settings
 
 ### 1. Get your Todoist API token
 
-1. Open Todoist in your browser and go to **Settings → Integrations → Developer**.
+1. Open Todoist and go to **Settings → Integrations → Developer**.
 2. Copy the **API token** shown there.
 
 ### 2. Add it to the extension
