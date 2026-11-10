@@ -121,36 +121,37 @@
 
 /* "Add task" modal dialog, opened via the global keyboard shortcut. */
 .todoist-add-task-dialog {
-    padding: 4px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    background-color: #282828;
 }
 
 .todoist-add-task-content {
-    padding: 22px;
-    spacing: 10px;
-    min-width: 320px;
+    padding: 16px;
+    spacing: 8px;
+    min-width: 540px;
 }
 
-/* Big logo on the left, with "Add task" + "For GNOME" stacked next to it. */
-.todoist-add-task-header {
-    spacing: 14px;
-    margin-bottom: 10px;
+.todoist-add-task-brand-row {
+    min-height: 18px;
 }
 
-.todoist-add-task-logo {
-    icon-size: 42px;
-}
-
-.todoist-add-task-title {
-    font-weight: bold;
-    font-size: 1.15em;
+.todoist-add-task-brand-logo {
+    icon-size: 18px;
 }
 
 /* No scrolling — the entry (and the dialog around it, since it's a plain
    vertical layout) just grows taller as the wrapped text needs more lines. */
 .todoist-add-task-entry {
-    min-width: 260px;
-    max-width: 420px;
-    padding: 6px 8px;
+    min-width: 460px;
+    max-width: 640px;
+    min-height: 44px;
+    padding: 8px 2px;
+    border: none;
+    background-color: transparent;
+    box-shadow: none;
+    font-size: 1.05em;
 }
 
 /* Row of priority / date / time pickers, with the submit button pinned to
@@ -161,14 +162,24 @@
 }
 
 .todoist-add-task-option-button {
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    padding: 4px 10px;
+    border-radius: 7px;
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    background-color: rgba(255, 255, 255, 0.035);
+    padding: 6px 9px;
     font-size: 0.9em;
 }
 
+.todoist-add-task-option-button-content {
+    spacing: 5px;
+}
+
+.todoist-add-task-option-icon {
+    icon-size: 14px;
+    color: rgba(255, 255, 255, 0.76);
+}
+
 .todoist-add-task-option-button:hover {
-    background-color: rgba(255, 255, 255, 0.08);
+    background-color: rgba(255, 255, 255, 0.09);
 }
 
 /* Applied once a value has been picked, on top of any priority tint. */
@@ -182,9 +193,10 @@
 .todoist-add-task-time-entry {
     min-width: 64px;
     max-width: 64px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    padding: 4px 10px;
+    border-radius: 7px;
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    background-color: rgba(255, 255, 255, 0.035);
+    padding: 6px 9px;
     font-size: 0.9em;
 }
 
@@ -192,19 +204,23 @@
     border-color: rgb(53, 132, 228);
 }
 
-/* Round submit button showing a "+" icon instead of an "Add" label. */
+.todoist-add-task-time-control {
+    spacing: 4px;
+}
+
+/* Blue square send button inspired by Todoist's composer. */
 .todoist-add-task-submit {
-    width: 30px;
-    height: 30px;
-    min-width: 30px;
-    min-height: 30px;
-    border-radius: 999px;
-    background-color: #e44332;
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
+    border-radius: 7px;
+    background-color: #758eaf;
     color: white;
 }
 
 .todoist-add-task-submit:hover {
-    background-color: #c8382a;
+    background-color: #879fbe;
 }
 
 /* Calendar popup shown under the "Date" pill in the "Add task" dialog. */
@@ -231,7 +247,7 @@
     height: 28px;
     min-width: 28px;
     min-height: 28px;
-    border-radius: 999px;
+    border-radius: 6px;
 }
 
 .todoist-calendar-nav-button:hover,
@@ -255,7 +271,7 @@
     height: 32px;
     min-width: 32px;
     min-height: 32px;
-    border-radius: 999px;
+    border-radius: 6px;
     text-align: center;
 }
 
@@ -288,7 +304,7 @@
 
 .todoist-calendar-footer-button {
     padding: 3px 10px;
-    border-radius: 999px;
+    border-radius: 6px;
     font-size: 0.9em;
 }
 

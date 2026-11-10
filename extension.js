@@ -308,29 +308,45 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
     _init(onSubmit, extensionPath) {
         super._init({styleClass: 'todoist-add-task-dialog', destroyOnClose: true});
 
+        // Keep the Shell's normal modal fade, while giving the dialog itself
+        // a subtle spring-like settle as it appears.
+        this.dialogLayout.set_pivot_point(0.5, 0.5);
+        this.dialogLayout.translation_y = -130;
+        this.connect('button-press-event', (_actor, event) => {
+            if (event.get_button() !== 1)
+                return Clutter.EVENT_PROPAGATE;
+
+            const [x, y] = event.get_coords();
+            const [dialogX, dialogY] = this.dialogLayout.get_transformed_position();
+            const [dialogWidth, dialogHeight] = this.dialogLayout.get_transformed_size();
+            if (x < dialogX || x > dialogX + dialogWidth ||
+                y < dialogY || y > dialogY + dialogHeight) {
+                this.close();
+                return Clutter.EVENT_STOP;
+            }
+            return Clutter.EVENT_PROPAGATE;
+        });
+
         this._onSubmit = onSubmit;
         this._priorityLevel = 0; // 0 = none, 1..4 = P1..P4
         this._selectedDate = null; // null = none, else the Date picked in the calendar popup
+        this._attachment = null;
 
         const content = new St.BoxLayout({vertical: true, style_class: 'todoist-add-task-content'});
 
-        // --- Header: big logo on the left + title ---
-        const header = new St.BoxLayout({
+        const brandRow = new St.BoxLayout({
             vertical: false,
-            style_class: 'todoist-add-task-header',
+            style_class: 'todoist-add-task-brand-row',
+            x_expand: true,
         });
-        header.add_child(new St.Icon({
+        brandRow.add_child(new St.Widget({x_expand: true}));
+        brandRow.add_child(new St.Icon({
             gicon: Gio.icon_new_for_string(
                 GLib.build_filenamev([extensionPath, 'images', 'logo.svg'])),
-            icon_size: 42,
-            style_class: 'todoist-add-task-logo',
+            icon_size: 18,
+            style_class: 'todoist-add-task-brand-logo',
         }));
-        header.add_child(new St.Label({
-            text: 'Add task',
-            style_class: 'todoist-add-task-title',
-            y_align: Clutter.ActorAlign.CENTER,
-        }));
-        content.add_child(header);
+        content.add_child(brandRow);
 
         // --- Task entry ---
         this._entry = new St.Entry({
@@ -374,11 +390,16 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
             x_expand: true,
         });
 
-        this._priorityButton = this._makeOptionButton('🚩', 'Priority');
+        this._attachmentButton = this._makeOptionButton('mail-attachment-symbolic', 'Attach');
+        this._attachmentButton.add_style_class_name('todoist-add-task-attachment-button');
+        this._attachmentButton.connect('clicked', () => this._chooseAttachment());
+        optionsRow.add_child(this._attachmentButton);
+
+        this._priorityButton = this._makeOptionButton('starred-symbolic', 'Priority');
         this._priorityButton.connect('clicked', () => this._cyclePriority());
         optionsRow.add_child(this._priorityButton);
 
-        this._dateButton = this._makeOptionButton('📅', 'Date');
+        this._dateButton = this._makeOptionButton('x-office-calendar-symbolic', 'Date');
         this._datePicker = new DatePickerPopup(this._dateButton, date => this._setDate(date));
         this.connect('destroy', () => this._datePicker.destroy());
         this._dateButton.connect('clicked', () => this._datePicker.toggle());
@@ -394,7 +415,18 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
             this._timeEntry.grab_key_focus();
             return Clutter.EVENT_PROPAGATE;
         });
-        optionsRow.add_child(this._timeEntry);
+        const timeControl = new St.BoxLayout({
+            vertical: false,
+            style_class: 'todoist-add-task-time-control',
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        timeControl.add_child(new St.Icon({
+            icon_name: 'preferences-system-time-symbolic',
+            icon_size: 14,
+            style_class: 'todoist-add-task-option-icon',
+        }));
+        timeControl.add_child(this._timeEntry);
+        optionsRow.add_child(timeControl);
 
         optionsRow.add_child(new St.Widget({x_expand: true}));
 
@@ -404,7 +436,7 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
             track_hover: true,
             y_align: Clutter.ActorAlign.CENTER,
         });
-        this._addButton.child = new St.Icon({icon_name: 'list-add-symbolic', icon_size: 16});
+        this._addButton.child = new St.Icon({icon_name: 'go-up-symbolic', icon_size: 16});
         this._addButton.connect('clicked', () => this._submit());
         optionsRow.add_child(this._addButton);
 
@@ -414,22 +446,117 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
         this.setInitialKeyFocus(this._entry);
     }
 
-    _makeOptionButton(icon, defaultLabel) {
+    _makeOptionButton(iconName, defaultLabel) {
         const button = new St.Button({
             style_class: 'todoist-add-task-option-button',
             can_focus: true,
             track_hover: true,
         });
-        const label = new St.Label({text: `${icon} ${defaultLabel}`});
-        button.child = label;
+        const box = new St.BoxLayout({
+            vertical: false,
+            style_class: 'todoist-add-task-option-button-content',
+        });
+        box.add_child(new St.Icon({
+            icon_name: iconName,
+            icon_size: 14,
+            style_class: 'todoist-add-task-option-icon',
+        }));
+        const label = new St.Label({
+            text: defaultLabel,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        box.add_child(label);
+        button.child = box;
         button._label = label;
-        button._icon = icon;
         button._defaultLabel = defaultLabel;
         return button;
     }
 
+    _chooseAttachment() {
+        // The Shell's modal grab keeps this dialog above the portal window.
+        // Temporarily release the grab and hide the dialog so the system
+        // file chooser can receive focus, then restore both on response.
+        this.popModal();
+        this.hide();
+
+        const token = `todoist_${GLib.uuid_string_random().replaceAll('-', '')}`;
+        let requestPath = null;
+        let earlyResponse = null;
+        const subscription = Gio.DBus.session.signal_subscribe(
+            'org.freedesktop.portal.Desktop',
+            'org.freedesktop.portal.Request',
+            'Response',
+            null,
+            null,
+            Gio.DBusSignalFlags.NONE,
+            (_connection, _sender, objectPath, _interface, _signal, parameters) => {
+                if (objectPath !== requestPath) {
+                    earlyResponse = {objectPath, parameters};
+                    return;
+                }
+                this._finishAttachmentChooser(parameters);
+                Gio.DBus.session.signal_unsubscribe(subscription);
+            }
+        );
+
+        Gio.DBus.session.call(
+            'org.freedesktop.portal.Desktop',
+            '/org/freedesktop/portal/desktop',
+            'org.freedesktop.portal.FileChooser',
+            'OpenFile',
+            new GLib.Variant('(ssa{sv})', [
+                '',
+                'Attach a document',
+                {
+                    handle_token: new GLib.Variant('s', token),
+                    modal: new GLib.Variant('b', true),
+                },
+            ]),
+            new GLib.VariantType('(o)'),
+            Gio.DBusCallFlags.NONE,
+            -1,
+            null,
+            (connection, result) => {
+                try {
+                    [requestPath] = connection.call_finish(result).deep_unpack();
+                    if (earlyResponse?.objectPath === requestPath) {
+                        this._finishAttachmentChooser(earlyResponse.parameters);
+                        Gio.DBus.session.signal_unsubscribe(subscription);
+                    }
+                } catch (e) {
+                    Gio.DBus.session.signal_unsubscribe(subscription);
+                    this._restoreAfterAttachmentChooser();
+                    Main.notify('Todoist for GNOME', `Could not open the file picker: ${e.message}`);
+                }
+            }
+        );
+    }
+
+    _finishAttachmentChooser(parameters) {
+        this._handleAttachmentChooserResponse(parameters);
+        this._restoreAfterAttachmentChooser();
+    }
+
+    _restoreAfterAttachmentChooser() {
+        this.show();
+        this.pushModal();
+    }
+
+    _handleAttachmentChooserResponse(parameters) {
+        const [response, results] = parameters.deep_unpack();
+        if (response !== 0)
+            return;
+
+        const uris = results.uris?.deep_unpack?.() ?? results.uris;
+        const uri = uris?.[0];
+        if (!uri)
+            return;
+        this._attachment = Gio.File.new_for_uri(uri);
+        this._setOptionLabel(this._attachmentButton, this._attachment.get_basename());
+    }
+
     _setOptionLabel(button, text) {
-        button._label.text = text ? `${button._icon} ${text}` : `${button._icon} ${button._defaultLabel}`;
+        button._label.text = text || button._defaultLabel;
     }
 
     _cyclePriority() {
@@ -458,6 +585,25 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
 
         this._setOptionLabel(this._dateButton, formatPickedDate(date));
         this._dateButton.add_style_class_name('todoist-add-task-option-button-active');
+    }
+
+    open() {
+        if (this.state === ModalDialog.State.OPENED ||
+            this.state === ModalDialog.State.OPENING)
+            return super.open();
+
+        this.dialogLayout.scale_x = 0.94;
+        this.dialogLayout.scale_y = 0.94;
+        const opened = super.open();
+        if (opened) {
+            this.dialogLayout.ease({
+                scale_x: 1,
+                scale_y: 1,
+                duration: 260,
+                mode: Clutter.AnimationMode.EASE_OUT_BACK,
+            });
+        }
+        return opened;
     }
 
     _submit() {
@@ -504,7 +650,7 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
                 this._addButton.reactive = true;
                 this._entry.grab_key_focus();
             }
-        });
+        }, this._attachment);
     }
 });
 
@@ -519,7 +665,9 @@ class TodoistIndicator extends PanelMenu.Button {
         this._pendingHighlightId = null;
 
         const icon = new St.Icon({
-            icon_name: 'view-list-symbolic',
+            gicon: Gio.icon_new_for_string(
+                GLib.build_filenamev([extension.path, 'images', 'logo.svg'])),
+            icon_size: 16,
             style_class: 'system-status-icon',
         });
         this.add_child(icon);
@@ -636,7 +784,13 @@ class TodoistIndicator extends PanelMenu.Button {
     // picked via the dialog's pill buttons, if any - it wins over whatever
     // is typed inline in `content` (e.g. "!!2", "12.31.2026", "18:00").
     // `callback(ok)` is called once we know whether the task was created.
-    _createTask(content, callback, explicit = {}) {
+    _createTask(content, callback, explicit = {}, attachment = null) {
+        if (!this._session) {
+            Main.notify('Todoist for GNOME', 'The extension was reloaded. Reopen the dialog and try again.');
+            callback?.(false);
+            return;
+        }
+
         const token = this._settings.get_string('api-token');
         if (!token) {
             Main.notify('Todoist for GNOME', 'No token set. Open the extension settings.');
@@ -698,7 +852,19 @@ class TodoistIndicator extends PanelMenu.Button {
 
                     if (this.menu.isOpen)
                         this._loadTasks(newTaskId);
-                    callback?.(true);
+                    if (attachment && newTaskId) {
+                        // The task is already safely created. Close the modal
+                        // now and upload the document in the background so a
+                        // large or slow file cannot hold the UI hostage.
+                        callback?.(true);
+                        Main.notify('Todoist for GNOME', 'Task created. Uploading document…');
+                        this._uploadTaskAttachment(attachment, newTaskId);
+                    }
+                    else {
+                        if (attachment)
+                            Main.notify('Todoist for GNOME', 'Task created, but its document could not be attached.');
+                        callback?.(true);
+                    }
                 } else {
                     Main.notify('Todoist for GNOME', `Failed to add the task (HTTP ${status})`);
                     callback?.(false);
@@ -707,13 +873,124 @@ class TodoistIndicator extends PanelMenu.Button {
         );
     }
 
+    _uploadTaskAttachment(file, taskId) {
+        const token = this._settings.get_string('api-token');
+        const fail = message => {
+            Main.notify('Todoist for GNOME', `Task created, but the document could not be attached: ${message}`);
+        };
+
+        if (!this._session) {
+            fail('The extension was reloaded before the upload started.');
+            return;
+        }
+
+        file.load_contents_async(null, (source, result) => {
+            let contents;
+            try {
+                const [loaded, data] = source.load_contents_finish(result);
+                if (!loaded) {
+                    fail('Could not read the selected document.');
+                    return;
+                }
+                contents = data;
+            } catch (e) {
+                fail(e.message);
+                return;
+            }
+
+            const filename = file.get_basename();
+            const [contentType] = Gio.content_type_guess(filename, contents);
+            const mimeType = Gio.content_type_get_mime_type(contentType) ?? 'application/octet-stream';
+            const upload = Soup.Message.new('POST', 'https://api.todoist.com/api/v1/uploads');
+            upload.request_headers.append('Authorization', `Bearer ${token}`);
+            upload.request_headers.append('X-File-Name', filename.replace(/[\r\n]/g, ' '));
+            upload.set_request_body_from_bytes(mimeType, new GLib.Bytes(contents));
+
+            this._session.send_and_read_async(upload, GLib.PRIORITY_DEFAULT, null, (session, uploadResult) => {
+                let uploadBytes;
+                try {
+                    uploadBytes = session.send_and_read_finish(uploadResult);
+                } catch (e) {
+                    fail(e.message);
+                    return;
+                }
+                if (upload.get_status() < 200 || upload.get_status() >= 300) {
+                    fail(`Todoist upload returned HTTP ${upload.get_status()}`);
+                    return;
+                }
+
+                let attachment;
+                try {
+                    attachment = JSON.parse(new TextDecoder('utf-8').decode(uploadBytes.get_data()));
+                } catch (e) {
+                    fail('Todoist returned an unreadable upload response');
+                    return;
+                }
+
+                if (!attachment.file_url) {
+                    fail('Todoist did not return a URL for the uploaded file');
+                    return;
+                }
+
+                const comment = Soup.Message.new('POST', 'https://api.todoist.com/api/v1/comments');
+                comment.request_headers.append('Authorization', `Bearer ${token}`);
+                const commentBody = {
+                    task_id: taskId,
+                    content: `📎 ${attachment.file_name ?? filename}`,
+                    attachment: {
+                        file_name: attachment.file_name ?? filename,
+                        file_type: attachment.file_type ?? mimeType,
+                        file_url: attachment.file_url,
+                        resource_type: attachment.resource_type ?? 'file',
+                    },
+                };
+                comment.set_request_body_from_bytes('application/json', new GLib.Bytes(
+                    new TextEncoder().encode(JSON.stringify(commentBody))));
+                this._session.send_and_read_async(comment, GLib.PRIORITY_DEFAULT, null, (commentSession, commentResult) => {
+                    let commentBytes;
+                    try {
+                        commentBytes = commentSession.send_and_read_finish(commentResult);
+                    } catch (e) {
+                        fail(e.message);
+                        return;
+                    }
+                    if (comment.get_status() < 200 || comment.get_status() >= 300) {
+                        const responseText = new TextDecoder('utf-8').decode(commentBytes.get_data());
+                        let detail = responseText;
+                        try {
+                            const error = JSON.parse(responseText);
+                            detail = error.error ?? error.message ?? responseText;
+                        } catch (e) {
+                            // Keep Todoist's response text for actionable errors.
+                        }
+                        fail(`Todoist rejected the attachment (HTTP ${comment.get_status()}): ${detail.slice(0, 300)}`);
+                        return;
+                    }
+
+                    let createdComment;
+                    try {
+                        createdComment = JSON.parse(new TextDecoder('utf-8').decode(commentBytes.get_data()));
+                    } catch (e) {
+                        fail('Todoist accepted the request but returned an unreadable comment response');
+                        return;
+                    }
+                    if (!createdComment.file_attachment?.file_url) {
+                        fail('Todoist created no file attachment on the task comment');
+                        return;
+                    }
+                    Main.notify('Todoist for GNOME', `Attached ${createdComment.file_attachment.file_name ?? filename} to the task comment.`);
+                });
+            });
+        });
+    }
+
     showAddTaskDialog() {
         // Wrapped in try/catch so that if building the dialog ever throws,
         // the failure surfaces as a notification instead of just doing
         // nothing (that's how we caught the two St.ScrollView issues above).
         try {
             const dialog = new AddTaskDialog(
-                (content, explicit, done) => this._createTask(content, done, explicit),
+                (content, explicit, done, attachment) => this._createTask(content, done, explicit, attachment),
                 this._extension.path);
             dialog.open();
         } catch (e) {
