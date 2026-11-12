@@ -131,6 +131,8 @@ function formatPickedDate(date) {
 class DatePickerPopup {
     constructor(sourceButton, onPick) {
         this._onPick = onPick;
+        this._signalConnections = [];
+        this._gridConnections = [];
         this._selected = null;
 
         const now = new Date();
@@ -147,7 +149,7 @@ class DatePickerPopup {
         this._manager = new PopupMenu.PopupMenuManager(sourceButton);
         this._manager.addMenu(this.menu);
 
-        this.menu.connect('open-state-changed', (_menu, open) => {
+        this._connect(this.menu, 'open-state-changed', (_menu, open) => {
             if (!open)
                 return;
             // Always open on the month of the picked date (or today's).
@@ -192,7 +194,7 @@ class DatePickerPopup {
             can_focus: true,
             track_hover: true,
         });
-        clearButton.connect('clicked', () => this._pick(null));
+        this._connect(clearButton, 'clicked', () => this._pick(null));
         footer.add_child(clearButton);
         footer.add_child(new St.Widget({x_expand: true}));
         const todayButton = new St.Button({
@@ -201,7 +203,7 @@ class DatePickerPopup {
             can_focus: true,
             track_hover: true,
         });
-        todayButton.connect('clicked', () => this._pick(new Date()));
+        this._connect(todayButton, 'clicked', () => this._pick(new Date()));
         footer.add_child(todayButton);
         root.add_child(footer);
 
@@ -216,8 +218,20 @@ class DatePickerPopup {
             track_hover: true,
             child: new St.Icon({icon_name: iconName, icon_size: 16}),
         });
-        button.connect('clicked', callback);
+        this._connect(button, 'clicked', callback);
         return button;
+    }
+
+    _connect(object, signal, callback) {
+        const id = object.connect(signal, callback);
+        this._signalConnections.push([object, id]);
+        return id;
+    }
+
+    _connectGrid(object, signal, callback) {
+        const id = object.connect(signal, callback);
+        this._gridConnections.push([object, id]);
+        return id;
     }
 
     _shiftMonth(delta) {
@@ -228,6 +242,9 @@ class DatePickerPopup {
     }
 
     _rebuildGrid() {
+        for (const [object, id] of this._gridConnections)
+            object.disconnect(id);
+        this._gridConnections = [];
         this._grid.destroy_all_children();
 
         this._monthLabel.text = new Intl.DateTimeFormat(undefined, {
@@ -269,7 +286,7 @@ class DatePickerPopup {
                 x_expand: true,
                 x_align: Clutter.ActorAlign.CENTER,
             });
-            button.connect('clicked', () => this._pick(date));
+            this._connectGrid(button, 'clicked', () => this._pick(date));
             this._layout.attach(button, i % 7, 1 + Math.floor(i / 7), 1, 1);
         }
     }
@@ -289,9 +306,21 @@ class DatePickerPopup {
     }
 
     destroy() {
+        for (const [object, id] of this._gridConnections)
+            object.disconnect(id);
+        this._gridConnections = [];
+        for (const [object, id] of this._signalConnections)
+            object.disconnect(id);
+        this._signalConnections = [];
         this.menu.close(false);
         this._manager.removeMenu(this.menu);
         this.menu.destroy();
+        this._manager = null;
+        this.menu = null;
+        this._onPick = null;
+        this._grid = null;
+        this._layout = null;
+        this._monthLabel = null;
     }
 }
 
@@ -307,12 +336,13 @@ const AddTaskDialog = GObject.registerClass(
 class AddTaskDialog extends ModalDialog.ModalDialog {
     _init(onSubmit, extensionPath) {
         super._init({styleClass: 'todoist-add-task-dialog', destroyOnClose: true});
+        this._signalConnections = [];
 
         // Keep the Shell's normal modal fade, while giving the dialog itself
         // a subtle spring-like settle as it appears.
         this.dialogLayout.set_pivot_point(0.5, 0.5);
         this.dialogLayout.translation_y = -130;
-        this.connect('button-press-event', (_actor, event) => {
+        this._connectOwned(this, 'button-press-event', (_actor, event) => {
             if (event.get_button() !== 1)
                 return Clutter.EVENT_PROPAGATE;
 
@@ -360,7 +390,7 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
         // Note: with single-line-mode off (needed for wrapping), ClutterText
         // no longer fires 'activate' on Enter - it would just insert a
         // newline instead. So Enter/Escape are both handled here directly.
-        this._entry.clutter_text.connect('key-press-event', (actor, event) => {
+        this._connectOwned(this._entry.clutter_text, 'key-press-event', (actor, event) => {
             const symbol = event.get_key_symbol();
             if (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_KP_Enter) {
                 this._submit();
@@ -373,7 +403,7 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
             return Clutter.EVENT_PROPAGATE;
         });
 
-        this._entry.connect('button-press-event', () => {
+        this._connectOwned(this._entry, 'button-press-event', () => {
             this._entry.grab_key_focus();
             return Clutter.EVENT_PROPAGATE;
         });
@@ -392,17 +422,16 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
 
         this._attachmentButton = this._makeOptionButton('mail-attachment-symbolic', 'Attach');
         this._attachmentButton.add_style_class_name('todoist-add-task-attachment-button');
-        this._attachmentButton.connect('clicked', () => this._chooseAttachment());
+        this._connectOwned(this._attachmentButton, 'clicked', () => this._chooseAttachment());
         optionsRow.add_child(this._attachmentButton);
 
         this._priorityButton = this._makeOptionButton('starred-symbolic', 'Priority');
-        this._priorityButton.connect('clicked', () => this._cyclePriority());
+        this._connectOwned(this._priorityButton, 'clicked', () => this._cyclePriority());
         optionsRow.add_child(this._priorityButton);
 
         this._dateButton = this._makeOptionButton('x-office-calendar-symbolic', 'Date');
         this._datePicker = new DatePickerPopup(this._dateButton, date => this._setDate(date));
-        this.connect('destroy', () => this._datePicker.destroy());
-        this._dateButton.connect('clicked', () => this._datePicker.toggle());
+        this._connectOwned(this._dateButton, 'clicked', () => this._datePicker.toggle());
         optionsRow.add_child(this._dateButton);
 
         this._timeEntry = new St.Entry({
@@ -411,7 +440,7 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
             can_focus: true,
         });
         this._timeEntry.clutter_text.set_max_length(5);
-        this._timeEntry.connect('button-press-event', () => {
+        this._connectOwned(this._timeEntry, 'button-press-event', () => {
             this._timeEntry.grab_key_focus();
             return Clutter.EVENT_PROPAGATE;
         });
@@ -437,13 +466,35 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
             y_align: Clutter.ActorAlign.CENTER,
         });
         this._addButton.child = new St.Icon({icon_name: 'go-up-symbolic', icon_size: 16});
-        this._addButton.connect('clicked', () => this._submit());
+        this._connectOwned(this._addButton, 'clicked', () => this._submit());
         optionsRow.add_child(this._addButton);
 
         content.add_child(optionsRow);
         this.contentLayout.add_child(content);
 
         this.setInitialKeyFocus(this._entry);
+    }
+
+    _connectOwned(object, signal, callback) {
+        const id = object.connect(signal, callback);
+        this._signalConnections.push([object, id]);
+        return id;
+    }
+
+    destroy() {
+        for (const [object, id] of this._signalConnections)
+            object.disconnect(id);
+        this._signalConnections = [];
+        this._datePicker?.destroy();
+        this._datePicker = null;
+        for (const name of ['_entry', '_timeEntry', '_addButton', '_attachmentButton',
+            '_priorityButton', '_dateButton']) {
+            this[name]?.destroy();
+            this[name] = null;
+        }
+        this._attachment = null;
+        this._onSubmit = null;
+        super.destroy();
     }
 
     _makeOptionButton(iconName, defaultLabel) {
@@ -663,6 +714,7 @@ class TodoistIndicator extends PanelMenu.Button {
         this._settings = settings;
         this._pendingSources = new Set();
         this._pendingHighlightId = null;
+        this._signalConnections = [];
 
         const icon = new St.Icon({
             gicon: Gio.icon_new_for_string(
@@ -689,17 +741,17 @@ class TodoistIndicator extends PanelMenu.Button {
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
         this._openAppItem = new PopupMenu.PopupMenuItem('Open Todoist');
-        this._openAppItem.connect('activate', () => this._openApp());
+        this._connectOwned(this._openAppItem, 'activate', () => this._openApp());
         this.menu.addMenuItem(this._openAppItem);
 
         this._settingsItem = new PopupMenu.PopupMenuItem('Open Settings');
-        this._settingsItem.connect('activate', () => this._extension.openPreferences());
+        this._connectOwned(this._settingsItem, 'activate', () => this._extension.openPreferences());
         this.menu.addMenuItem(this._settingsItem);
 
         // Tasks are fetched every time the menu is opened, not just once on
         // enable(). On close we clear the items right away so stale data
         // doesn't flash on the next open.
-        this.menu.connect('open-state-changed', (menu, isOpen) => {
+        this._connectOwned(this.menu, 'open-state-changed', (menu, isOpen) => {
             if (isOpen)
                 this._loadTasks();
             else
@@ -707,6 +759,12 @@ class TodoistIndicator extends PanelMenu.Button {
         });
 
         this._addPlaceholder('Click to load tasks');
+    }
+
+    _connectOwned(object, signal, callback) {
+        const id = object.connect(signal, callback);
+        this._signalConnections.push([object, id]);
+        return id;
     }
 
     _buildHeader() {
@@ -747,7 +805,8 @@ class TodoistIndicator extends PanelMenu.Button {
             x_expand: true,
         });
         entry.clutter_text.set_activatable(true);
-        entry.clutter_text.connect('activate', () => this._quickAddTask(entry));
+        this._quickAddEntry = entry;
+        this._connectOwned(entry.clutter_text, 'activate', () => this._quickAddTask(entry));
         box.add_child(entry);
 
         const addButton = new St.Button({
@@ -757,7 +816,8 @@ class TodoistIndicator extends PanelMenu.Button {
             y_align: Clutter.ActorAlign.CENTER,
         });
         addButton.child = new St.Icon({icon_name: 'list-add-symbolic', icon_size: 14});
-        addButton.connect('clicked', () => this._quickAddTask(entry));
+        this._quickAddButton = addButton;
+        this._connectOwned(addButton, 'clicked', () => this._quickAddTask(entry));
         box.add_child(addButton);
 
         item.add_child(box);
@@ -1303,12 +1363,25 @@ class TodoistIndicator extends PanelMenu.Button {
     }
 
     destroy() {
+        for (const [object, id] of this._signalConnections)
+            object.disconnect(id);
+        this._signalConnections = [];
         this._session?.abort();
         this._session = null;
 
         for (const id of this._pendingSources)
             GLib.Source.remove(id);
         this._pendingSources.clear();
+
+        this._quickAddEntry?.destroy();
+        this._quickAddEntry = null;
+        this._quickAddButton?.destroy();
+        this._quickAddButton = null;
+        this._openAppItem = null;
+        this._settingsItem = null;
+        this._taskSection = null;
+        this._extension = null;
+        this._settings = null;
 
         super.destroy();
     }
