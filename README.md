@@ -38,31 +38,23 @@
 
 ### Manual Installation
 
-You can build and install the extension from a local checkout using the
-`gnome-extensions` command.
+If the latest version of the extension is not yet available on the GNOME Extensions
+website, you can install it manually.
 
-1. From the repository root, create the ZIP:
+1. Clone, package, and install the extension.
    ```bash
-   gnome-extensions pack --force --extra-source=images .
+   git clone https://github.com/cheapdramas/todoist-for-gnome
+   cd todoist-for-gnome
+   gnome-extensions pack . --extra-source=images/
+   gnome-extensions install "todoist-for-gnome@cheapdramas.github.io.shell-extension.zip" --force
    ```
-   This creates `todoist-for-gnome@cheapdramas.github.io.shell-extension.zip` in
-   the current directory. Use `--out-dir=DIR` to select a different output
-   directory. `--extra-source=images` includes the logo used by the extension.
+   `gnome-extensions pack` creates the ZIP in the repository directory.
 
-2. Install the ZIP for your user. If you already have the ZIP, start here.
-   ```bash
-   gnome-extensions install --force todoist-for-gnome@cheapdramas.github.io.shell-extension.zip
-   ```
-   `--force` allows the command to replace an existing installation with the
-   same UUID. GNOME extracts the files to
-   `$XDG_DATA_HOME/gnome-shell/extensions/` (usually
-   `~/.local/share/gnome-shell/extensions/`).
+2. Log out and log back in to reload GNOME Shell.
 
-3. Log out and log back in so GNOME Shell loads the installed files. Then
-   enable the extension if needed and check its status:
+3. Enable the extension.
    ```bash
    gnome-extensions enable todoist-for-gnome@cheapdramas.github.io
-   gnome-extensions info todoist-for-gnome@cheapdramas.github.io
    ```
 
    You can also enable "Todoist for GNOME" in the Extensions app.
