@@ -391,16 +391,11 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
         this._entry.clutter_text.set_single_line_mode(false);
         this._entry.clutter_text.set_line_wrap(true);
         this._entry.clutter_text.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR);
-        // Note: with single-line-mode off (needed for wrapping), ClutterText
-        // no longer fires 'activate' on Enter - it would just insert a
-        // newline instead. So Enter/Escape are both handled here directly.
-        this._connectOwned(this._entry.clutter_text, 'key-press-event', (actor, event) => {
-            const symbol = event.get_key_symbol();
-            if (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_KP_Enter) {
-                this._submit();
-                return Clutter.EVENT_STOP;
-            }
-            if (symbol === Clutter.KEY_Escape) {
+        // Single-line mode also sets activatable. Re-enable it after allowing wrapping.
+        this._entry.clutter_text.set_activatable(true);
+        this._connectOwned(this._entry.clutter_text, 'activate', () => this._submit());
+        this._connectOwned(this._entry.clutter_text, 'key-press-event', (_actor, event) => {
+            if (event.get_key_symbol() === Clutter.KEY_Escape) {
                 this.close();
                 return Clutter.EVENT_STOP;
             }
@@ -443,6 +438,8 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
             can_focus: true,
         });
         this._timeEntry.clutter_text.set_max_length(5);
+        this._timeEntry.clutter_text.set_activatable(true);
+        this._connectOwned(this._timeEntry.clutter_text, 'activate', () => this._submit());
         this._connectOwned(this._timeEntry, 'button-press-event', () => {
             this._timeEntry.grab_key_focus();
             return Clutter.EVENT_PROPAGATE;
@@ -659,6 +656,9 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
     }
 
     _submit() {
+        if (!this._addButton.reactive)
+            return;
+
         const text = this._entry.get_text().trim();
         if (!text)
             return;
@@ -826,6 +826,9 @@ class TodoistIndicator extends PanelMenu.Button {
     }
 
     _quickAddTask(entry) {
+        if (!entry.reactive)
+            return;
+
         const content = entry.get_text().trim();
         if (!content)
             return;
