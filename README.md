@@ -7,7 +7,7 @@
 
 **Your Todoist tasks, right in the top panel.**
 
-[![GNOME Shell](https://img.shields.io/badge/GNOME%20Shell-45%E2%80%9350-4A86CF?logo=gnome&logoColor=white)](https://extensions.gnome.org/)
+[![GNOME Shell](https://img.shields.io/badge/GNOME%20Shell-45%E2%80%9351-4A86CF?logo=gnome&logoColor=white)](https://extensions.gnome.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Get it on GNOME Extensions](https://img.shields.io/badge/GNOME%20Extensions-Install-e44332)](https://extensions.gnome.org/extension/11070/todoist-for-gnome/)
 
@@ -38,25 +38,26 @@
 
 ### Manual Installation
 
-If latest version of the extension is not yet available on the GNOME Extensions
-website, you can install it manually:
+If the latest version of the extension is not yet available on the GNOME Extensions
+website, you can install it manually.
 
-1. Paste this commands:
+1. Clone, package, and install the extension.
    ```bash
    git clone https://github.com/cheapdramas/todoist-for-gnome
    cd todoist-for-gnome
    gnome-extensions pack . --extra-source=images/
    gnome-extensions install "todoist-for-gnome@cheapdramas.github.io.shell-extension.zip" --force
+   ```
+   `gnome-extensions pack` creates the ZIP in the repository directory.
 
-2. Restart GNOME Shell:
-   - Log out and log back in
+2. Log out and log back in to reload GNOME Shell.
 
-3. Enable the extension:
+3. Enable the extension.
    ```bash
    gnome-extensions enable todoist-for-gnome@cheapdramas.github.io
    ```
 
-   Or use Extensions Manager app to enable "Todoist for GNOME"
+   You can also enable "Todoist for GNOME" in the Extensions app.
 
 ## Setup / Settings
 

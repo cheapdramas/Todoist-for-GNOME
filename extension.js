@@ -41,6 +41,11 @@ const COMPLETE_SLIDE_DISTANCE = 48;
 // deadline), kept visibly dimmer than the task title.
 const META_OPACITY = 150;
 
+// St.BoxLayout gained orientation in GNOME 48 and lost vertical in GNOME 51.
+const VERTICAL_BOX_LAYOUT = St.BoxLayout.find_property('orientation')
+    ? {orientation: Clutter.Orientation.VERTICAL}
+    : {vertical: true};
+
 const pad2 = n => String(n).padStart(2, '0');
 
 // Parses inline task metadata the same way it's typed in Todoist's own
@@ -159,7 +164,7 @@ class DatePickerPopup {
             this._rebuildGrid();
         });
 
-        const root = new St.BoxLayout({vertical: true, style_class: 'todoist-calendar'});
+        const root = new St.BoxLayout({...VERTICAL_BOX_LAYOUT, style_class: 'todoist-calendar'});
 
         // --- Month navigation ---
         const nav = new St.BoxLayout({style_class: 'todoist-calendar-nav'});
@@ -293,7 +298,8 @@ class DatePickerPopup {
 
     _pick(date) {
         this._selected = date;
-        this.menu.close(true);
+        if (this.menu.isOpen)
+            this.menu.toggle();
         this._onPick(date);
     }
 
@@ -312,7 +318,6 @@ class DatePickerPopup {
         for (const [object, id] of this._signalConnections)
             object.disconnect(id);
         this._signalConnections = [];
-        this.menu.close(false);
         this._manager.removeMenu(this.menu);
         this.menu.destroy();
         this._manager = null;
@@ -362,10 +367,9 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
         this._selectedDate = null; // null = none, else the Date picked in the calendar popup
         this._attachment = null;
 
-        const content = new St.BoxLayout({vertical: true, style_class: 'todoist-add-task-content'});
+        const content = new St.BoxLayout({...VERTICAL_BOX_LAYOUT, style_class: 'todoist-add-task-content'});
 
         const brandRow = new St.BoxLayout({
-            vertical: false,
             style_class: 'todoist-add-task-brand-row',
             x_expand: true,
         });
@@ -387,16 +391,11 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
         this._entry.clutter_text.set_single_line_mode(false);
         this._entry.clutter_text.set_line_wrap(true);
         this._entry.clutter_text.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR);
-        // Note: with single-line-mode off (needed for wrapping), ClutterText
-        // no longer fires 'activate' on Enter - it would just insert a
-        // newline instead. So Enter/Escape are both handled here directly.
-        this._connectOwned(this._entry.clutter_text, 'key-press-event', (actor, event) => {
-            const symbol = event.get_key_symbol();
-            if (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_KP_Enter) {
-                this._submit();
-                return Clutter.EVENT_STOP;
-            }
-            if (symbol === Clutter.KEY_Escape) {
+        // Single-line mode also sets activatable. Re-enable it after allowing wrapping.
+        this._entry.clutter_text.set_activatable(true);
+        this._connectOwned(this._entry.clutter_text, 'activate', () => this._submit());
+        this._connectOwned(this._entry.clutter_text, 'key-press-event', (_actor, event) => {
+            if (event.get_key_symbol() === Clutter.KEY_Escape) {
                 this.close();
                 return Clutter.EVENT_STOP;
             }
@@ -415,7 +414,6 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
         // --- Options row: priority / date / time pickers, plus the submit
         // button on the right. ---
         const optionsRow = new St.BoxLayout({
-            vertical: false,
             style_class: 'todoist-add-task-options-row',
             x_expand: true,
         });
@@ -440,12 +438,13 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
             can_focus: true,
         });
         this._timeEntry.clutter_text.set_max_length(5);
+        this._timeEntry.clutter_text.set_activatable(true);
+        this._connectOwned(this._timeEntry.clutter_text, 'activate', () => this._submit());
         this._connectOwned(this._timeEntry, 'button-press-event', () => {
             this._timeEntry.grab_key_focus();
             return Clutter.EVENT_PROPAGATE;
         });
         const timeControl = new St.BoxLayout({
-            vertical: false,
             style_class: 'todoist-add-task-time-control',
             y_align: Clutter.ActorAlign.CENTER,
         });
@@ -504,7 +503,6 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
             track_hover: true,
         });
         const box = new St.BoxLayout({
-            vertical: false,
             style_class: 'todoist-add-task-option-button-content',
         });
         box.add_child(new St.Icon({
@@ -658,6 +656,9 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
     }
 
     _submit() {
+        if (!this._addButton.reactive)
+            return;
+
         const text = this._entry.get_text().trim();
         if (!text)
             return;
@@ -771,7 +772,7 @@ class TodoistIndicator extends PanelMenu.Button {
         const header = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
         header.add_style_class_name('todoist-header');
 
-        const box = new St.BoxLayout({vertical: false});
+        const box = new St.BoxLayout();
 
         const logo = new St.Icon({
             gicon: Gio.icon_new_for_string(
@@ -796,7 +797,7 @@ class TodoistIndicator extends PanelMenu.Button {
         const item = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
         item.add_style_class_name('todoist-quickadd-row');
 
-        const box = new St.BoxLayout({vertical: false, x_expand: true});
+        const box = new St.BoxLayout({x_expand: true});
 
         const entry = new St.Entry({
             style_class: 'todoist-quickadd-entry',
@@ -825,6 +826,9 @@ class TodoistIndicator extends PanelMenu.Button {
     }
 
     _quickAddTask(entry) {
+        if (!entry.reactive)
+            return;
+
         const content = entry.get_text().trim();
         if (!content)
             return;
@@ -1198,9 +1202,9 @@ class TodoistIndicator extends PanelMenu.Button {
         item.add_style_class_name('todoist-task-row');
         item.connect('activate', () => this._openTask(task));
 
-        const row = new St.BoxLayout({vertical: false, x_expand: true});
+        const row = new St.BoxLayout({x_expand: true});
 
-        const textBox = new St.BoxLayout({vertical: true, x_expand: true});
+        const textBox = new St.BoxLayout({...VERTICAL_BOX_LAYOUT, x_expand: true});
 
         const titleLabel = new St.Label({
             text: task.content,
