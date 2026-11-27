@@ -41,6 +41,11 @@ const COMPLETE_SLIDE_DISTANCE = 48;
 // deadline), kept visibly dimmer than the task title.
 const META_OPACITY = 150;
 
+// St.BoxLayout gained orientation in GNOME 48 and lost vertical in GNOME 51.
+const VERTICAL_BOX_LAYOUT = St.BoxLayout.find_property('orientation')
+    ? {orientation: Clutter.Orientation.VERTICAL}
+    : {vertical: true};
+
 const pad2 = n => String(n).padStart(2, '0');
 
 // Parses inline task metadata the same way it's typed in Todoist's own
@@ -159,7 +164,7 @@ class DatePickerPopup {
             this._rebuildGrid();
         });
 
-        const root = new St.BoxLayout({vertical: true, style_class: 'todoist-calendar'});
+        const root = new St.BoxLayout({...VERTICAL_BOX_LAYOUT, style_class: 'todoist-calendar'});
 
         // --- Month navigation ---
         const nav = new St.BoxLayout({style_class: 'todoist-calendar-nav'});
@@ -293,7 +298,8 @@ class DatePickerPopup {
 
     _pick(date) {
         this._selected = date;
-        this.menu.close(true);
+        if (this.menu.isOpen)
+            this.menu.toggle();
         this._onPick(date);
     }
 
@@ -312,7 +318,6 @@ class DatePickerPopup {
         for (const [object, id] of this._signalConnections)
             object.disconnect(id);
         this._signalConnections = [];
-        this.menu.close(false);
         this._manager.removeMenu(this.menu);
         this.menu.destroy();
         this._manager = null;
@@ -362,10 +367,9 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
         this._selectedDate = null; // null = none, else the Date picked in the calendar popup
         this._attachment = null;
 
-        const content = new St.BoxLayout({vertical: true, style_class: 'todoist-add-task-content'});
+        const content = new St.BoxLayout({...VERTICAL_BOX_LAYOUT, style_class: 'todoist-add-task-content'});
 
         const brandRow = new St.BoxLayout({
-            vertical: false,
             style_class: 'todoist-add-task-brand-row',
             x_expand: true,
         });
@@ -415,7 +419,6 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
         // --- Options row: priority / date / time pickers, plus the submit
         // button on the right. ---
         const optionsRow = new St.BoxLayout({
-            vertical: false,
             style_class: 'todoist-add-task-options-row',
             x_expand: true,
         });
@@ -445,7 +448,6 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
             return Clutter.EVENT_PROPAGATE;
         });
         const timeControl = new St.BoxLayout({
-            vertical: false,
             style_class: 'todoist-add-task-time-control',
             y_align: Clutter.ActorAlign.CENTER,
         });
@@ -504,7 +506,6 @@ class AddTaskDialog extends ModalDialog.ModalDialog {
             track_hover: true,
         });
         const box = new St.BoxLayout({
-            vertical: false,
             style_class: 'todoist-add-task-option-button-content',
         });
         box.add_child(new St.Icon({
@@ -771,7 +772,7 @@ class TodoistIndicator extends PanelMenu.Button {
         const header = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
         header.add_style_class_name('todoist-header');
 
-        const box = new St.BoxLayout({vertical: false});
+        const box = new St.BoxLayout();
 
         const logo = new St.Icon({
             gicon: Gio.icon_new_for_string(
@@ -796,7 +797,7 @@ class TodoistIndicator extends PanelMenu.Button {
         const item = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
         item.add_style_class_name('todoist-quickadd-row');
 
-        const box = new St.BoxLayout({vertical: false, x_expand: true});
+        const box = new St.BoxLayout({x_expand: true});
 
         const entry = new St.Entry({
             style_class: 'todoist-quickadd-entry',
@@ -1198,9 +1199,9 @@ class TodoistIndicator extends PanelMenu.Button {
         item.add_style_class_name('todoist-task-row');
         item.connect('activate', () => this._openTask(task));
 
-        const row = new St.BoxLayout({vertical: false, x_expand: true});
+        const row = new St.BoxLayout({x_expand: true});
 
-        const textBox = new St.BoxLayout({vertical: true, x_expand: true});
+        const textBox = new St.BoxLayout({...VERTICAL_BOX_LAYOUT, x_expand: true});
 
         const titleLabel = new St.Label({
             text: task.content,
